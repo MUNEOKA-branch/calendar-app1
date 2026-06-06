@@ -172,11 +172,13 @@
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       cell.dataset.date = dateStr;
 
-      cell.addEventListener("click", () => {
+       cell.addEventListener("click", () => {
         cell.style.backgroundColor = "#FDECEC";
+        
+        // 💡 177行目は、このようにバッククォート `` で囲まれた「完全に1行のきれいなURL」にします
         const targetUrl = `https://google.com{dateStr}&userId=${USER_ID}`;
         
-        // 💡 登録したジャンプ命令を確実に呼び出します
+        // 💡 LINEアプリの中でそのままスマートに開く設定（false）にします
         liff.openWindow({
           url: targetUrl,
           external: false
