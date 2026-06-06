@@ -174,7 +174,7 @@
 
       cell.addEventListener("click", () => {
         cell.style.backgroundColor = "#FDECEC";
-        const targetUrl = "https:" + "//://google.com" + dateStr + "&userId=" + USER_ID;
+        const targetUrl = `https://google.com{dateStr}&userId=${USER_ID}`;
         
         // 💡 登録したジャンプ命令を確実に呼び出します
         liff.openWindow({
