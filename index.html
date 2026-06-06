@@ -148,6 +148,12 @@
   // 💡 外部サーバー化に伴い、本物のLINEログインを行うコードを完全復活させました
   async function initLINE() {
     printLog("LINE(LIFF)の【テスト2】を開始します...");
+
+    let attempts = 0;
+    while (typeof liff === "undefined" && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100)); // 0.1秒待つ
+      attempts++;
+    }
     try {
       if (typeof liff === "undefined") {
         printLog("エラー: LINEのSDKが読み込めていません");
