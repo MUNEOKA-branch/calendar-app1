@@ -155,7 +155,12 @@
         isInClient: function() { return true; },
         isLoggedIn: function() { return true; },
         getProfile: function() { return Promise.resolve({ userId: "LINE_USER_CONNECTED_SUCCESS" }); }
-      };
+        openWindow: function(options) {
+          if (options && options.url) {
+            window.location.href = options.url; // 画面を確実に次のURLへ切り替えます
+          }
+         }
+       };
 
       await liff.init({ liffId: LIFF_ID });
       printLog("LINE初期化成功!");
