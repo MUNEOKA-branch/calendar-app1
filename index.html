@@ -205,8 +205,10 @@
         cell.style.backgroundColor = "#FDECEC";
         // データの保存窓口として、裏側のGAS（スプレッドシート）へ本物のIDを送信します
         const targetUrl = "https:" + "//://google.com" + dateStr + "&userId=" + USER_ID;
-        window.location.href = targetUrl;
-      });
+        liff.openWindow({
+          url: targetUrl,
+          external: false // LINEアプリの中でそのままパッと開く設定です
+        });
 
       grid.appendChild(cell);
     }
