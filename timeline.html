@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>空き状況</title>
-  <!-- LINE LIFFの公式SDK（GitHubで動かす場合はこれが必要です） -->
+  <!-- LINE LIFFの公式SDK -->
   <script src="https://line-scdn.net"></script>
   
   <style>
@@ -15,7 +15,22 @@
     .hour-block { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
     .time-slot { flex: 1; text-align: center; padding: 12px; background: #f9f9f9; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 16px; user-select: none; }
     .time-slot:active { background: #3A7AFE; color: #fff; }
-    .time-slot.booked { background: #E57373; color: #fff; cursor: not-allowed; pointer-events: none; } /* 予約済み用 */
+    
+    /* 🔴 予約が埋まっている時間用のデザイン（赤色・タップ禁止） */
+    .time-slot.booked { 
+      background: #FFEAEA; 
+      color: #E57373; 
+      border: 1px solid #E57373; 
+      cursor: not-allowed; 
+      pointer-events: none; /* クリックを完全に無効化 */
+      position: relative;
+    }
+    .time-slot.booked::after {
+      content: "満枠";
+      font-size: 10px;
+      display: block;
+      color: #E57373;
+    }
   </style>
 </head>
 <body>
@@ -30,11 +45,11 @@
   </div>
 
   <script>
-    // ⚠️ あなたの設定に合わせて書き換えてください
+    // ⚠️【あなたの情報に書き換えてください】
     const LIFF_ID = "2010309253-E597xFXQ";
-    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd0LJDcYRNuq-sJ6MoupGImtrlXkoUeD8op_orMEbjBJRyifg/viewform"; // フォームURL
+    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd0LJDcYRNuq-sJ6MoupGImtrlXkoUeD8op_orMEbjBJRyifg/viewform; // あなたのフォームURL
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbx2y7AfdPKqVDO_1Jvjp8c2jyUz5EFpy0GhuGwbSimlLvKUUqdrnQiahSC5xAypIfI/exec"; 
 
-    // URLのパラメータ（?date=xxx&userId=xxx）を自動で読み取る処理
     const urlParams = new URLSearchParams(window.location.search);
     const DATE_PARAM = urlParams.get('date');
     let USER_ID = urlParams.get('userId') || "GUEST_USER";
@@ -45,9 +60,6 @@
         document.getElementById("selectedDateTitle").textContent = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日の空き状況`;
       }
       
-      // タイムラインの枠組みを作成
-      renderTimelineSlots();
-
       // LINE LIFFの初期化
       try {
         await liff.init({ liffId: LIFF_ID });
@@ -56,11 +68,29 @@
           USER_ID = profile.userId;
         }
       } catch (err) {
-        console.log("LIFF読み込みスキップ（ブラウザテスト用）: " + err.message);
+        console.log("LIFF読み込みスキップ: " + err.message);
       }
+
+      // 🔄 LINEの準備ができたら、GASから予約データを取得してタイムラインを描く
+      await fetchBookedAndRender();
     });
 
-    function renderTimelineSlots() {
+    // GASから予約情報を取得して画面を描く関数
+    async function fetchBookedAndRender() {
+      let bookedTimes = [];
+      
+      try {
+        // GASに「この日の予約データをちょうだい」と通信
+        const response = await fetch(`${GAS_API_URL}?action=get_booked&date=${DATE_PARAM}`);
+        bookedTimes = await response.json(); // 例: ["09:30", "13:00"]
+      } catch (e) {
+        console.error("予約データの取得に失敗しました。空の状態で表示します:", e);
+      }
+
+      renderTimelineSlots(bookedTimes);
+    }
+
+    function renderTimelineSlots(bookedTimes) {
       const times = [];
       for (let h = 9; h <= 20; h++) {
         times.push((h < 10 ? "0" + h : h) + ":00");
@@ -73,25 +103,29 @@
       for (let i = 0; i < times.length; i += 2) {
         const hourBlock = document.createElement("div");
         hourBlock.className = "hour-block";
-        hourBlock.appendChild(createSlot(times[i]));
-        hourBlock.appendChild(createSlot(times[i + 1]));
+        hourBlock.appendChild(createSlot(times[i], bookedTimes));
+        hourBlock.appendChild(createSlot(times[i + 1], bookedTimes));
         timeline.appendChild(hourBlock);
       }
     }
 
-    function createSlot(time) {
+    function createSlot(time, bookedTimes) {
       const slot = document.createElement("div");
       slot.className = "time-slot";
       slot.textContent = time;
 
-      // タップしたときの処理（Googleフォームへ値を引き渡してジャンプ）
+      // 💡 もしこの時間がGASから届いた「予約済みリスト」に含まれていたら、赤くして処理を終了
+      if (bookedTimes.includes(time)) {
+        slot.classList.add("booked");
+        return slot; 
+      }
+
+      // 空いている場合のタップ処理
       slot.addEventListener("click", () => {
-        // 「09:30」を「09」と「30」に分解します
         const timeParts = time.split(":");
         const hour = timeParts[0];
         const minute = timeParts[1];
 
-        // 💡 Googleフォームの時刻形式は、時と分で別々の番号（_hour, _minute）に分けて送る必要があります
         const targetFormUrl = FORM_URL +
           "?usp=pp_url" +
           "&entry.634118256=" + encodeURIComponent(DATE_PARAM) +
@@ -101,7 +135,7 @@
         
         window.location.href = targetFormUrl;
       });
-      
+
       return slot;
     }
   </script>
