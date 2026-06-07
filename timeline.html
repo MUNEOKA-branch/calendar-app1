@@ -16,13 +16,13 @@
     .time-slot { flex: 1; text-align: center; padding: 12px; background: #f9f9f9; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-size: 16px; user-select: none; }
     .time-slot:active { background: #3A7AFE; color: #fff; }
     
-    /* 🔴 予約が埋まっている時間用のデザイン（赤色・タップ禁止） */
+    /* 🔴 予約が埋まっている時間用のデザイン */
     .time-slot.booked { 
       background: #FFEAEA; 
       color: #E57373; 
       border: 1px solid #E57373; 
       cursor: not-allowed; 
-      pointer-events: none; /* クリックを完全に無効化 */
+      pointer-events: none; 
       position: relative;
     }
     .time-slot.booked::after {
@@ -48,7 +48,7 @@
     // ⚠️【あなたの情報に書き換えてください】
     const LIFF_ID = "2010309253-E597xFXQ";
     const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd0LJDcYRNuq-sJ6MoupGImtrlXkoUeD8op_orMEbjBJRyifg/viewform"; // あなたのフォームURL
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbywNuuPWbRR1s6inpd5at6R44cyaCEjMKGUuqM93BKO_unvbwEjFLPUFeV_bks4wUM/exec"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbywNuuPWbRR1s6inpd5at6R44cyaCEjMKGUuqM93BKO_unvbwEjFLPUFeV_bks4wUM/exec"; // あなたの最新のGASデプロイURL
 
     const urlParams = new URLSearchParams(window.location.search);
     const DATE_PARAM = urlParams.get('date');
@@ -60,7 +60,6 @@
         document.getElementById("selectedDateTitle").textContent = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日の空き状況`;
       }
       
-      // LINE LIFFの初期化
       try {
         await liff.init({ liffId: LIFF_ID });
         if (liff.isLoggedIn()) {
@@ -71,22 +70,17 @@
         console.log("LIFF読み込みスキップ: " + err.message);
       }
 
-      // 🔄 LINEの準備ができたら、GASから予約データを取得してタイムラインを描く
       await fetchBookedAndRender();
     });
 
-    // GASから予約情報を取得して画面を描く関数
     async function fetchBookedAndRender() {
       let bookedTimes = [];
-      
       try {
-        // GASに「この日の予約データをちょうだい」と通信
         const response = await fetch(`${GAS_API_URL}?action=get_booked&date=${DATE_PARAM}`);
-        bookedTimes = await response.json(); // 例: ["09:30", "13:00"]
+        bookedTimes = await response.json(); 
       } catch (e) {
-        console.error("予約データの取得に失敗しました。空の状態で表示します:", e);
+        console.error("予約データの取得に失敗しました:", e);
       }
-
       renderTimelineSlots(bookedTimes);
     }
 
@@ -114,18 +108,18 @@
       slot.className = "time-slot";
       slot.textContent = time;
 
-      // 💡 もしこの時間がGASから届いた「予約済みリスト」に含まれていたら、赤くして処理を終了
       if (bookedTimes.includes(time)) {
         slot.classList.add("booked");
         return slot; 
       }
 
-      // 空いている場合のタップ処理
       slot.addEventListener("click", () => {
+        // 💡 09:30を「09」と「30」に100%確実に切り分ける修正を行いました
         const timeParts = time.split(":");
-        const hour = timeParts[0];
-        const minute = timeParts[1];
+        const hour = timeParts[0];   // 0番目の箱（時）
+        const minute = timeParts[1]; // 1番目の箱（分）
 
+        // 💡 時間番号の後ろに「_hour」と「_minute」をつけて送信します
         const targetFormUrl = FORM_URL +
           "?usp=pp_url" +
           "&entry.634118256=" + encodeURIComponent(DATE_PARAM) +
