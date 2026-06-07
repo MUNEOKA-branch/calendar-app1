@@ -48,7 +48,7 @@
     // ⚠️【あなたの情報に書き換えてください】
     const LIFF_ID = "2010309253-E597xFXQ";
     const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSd0LJDcYRNuq-sJ6MoupGImtrlXkoUeD8op_orMEbjBJRyifg/viewform"; // あなたのフォームURL
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyh9EATgzfUOX1mrypxJnm9etuZ5vjGIG907Y_z9wVohVkqKPSUktCmQJXchgBziNM/exec"; // あなたの最新のGASデプロイURL
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzgUa8Dv-qzbWZZwysvhI7-QTeoA09cASqunj31m9HMGzj9XVDz7RywScHONziteg/exec"; // あなたの最新のGASデプロイURL
 
     const urlParams = new URLSearchParams(window.location.search);
     const DATE_PARAM = urlParams.get('date');
@@ -113,18 +113,20 @@
         return slot; 
       }
 
-      slot.addEventListener("click", () => {
-        // 💡 09:30を「09」と「30」に100%確実に切り分ける修正を行いました
-        const timeParts = time.split(":");
-        const hour = timeParts[0];   // 0番目の箱（時）
-        const minute = timeParts[1]; // 1番目の箱（分）
+       slot.addEventListener("click", () => {
+        // 💡 1. 日付（"2026-06-07"）を、年・月・日に綺麗に分解します
+        const dateParts = DATE_PARAM.split("-");
+        const year = dateParts[0];
+        const month = dateParts[1];
+        const day = dateParts[2];
 
-        // 💡 時間番号の後ろに「_hour」と「_minute」をつけて送信します
+        // 💡 2. あなたのフォームの実際の受け皿（日付は3分割、時間はそのまま）に完全連動させます
         const targetFormUrl = FORM_URL +
           "?usp=pp_url" +
-          "&entry.634118256=" + encodeURIComponent(DATE_PARAM) +
-          "&entry.1613633312_hour=" + encodeURIComponent(hour) +
-          "&entry.1613633312_minute=" + encodeURIComponent(minute) +
+          "&entry.634118256_year=" + encodeURIComponent(year) +
+          "&entry.634118256_month=" + encodeURIComponent(month) +
+          "&entry.634118256_day=" + encodeURIComponent(day) +
+          "&entry.1613633312=" + encodeURIComponent(time) + // 09:30をそのまま送る
           "&entry.951828721=" + encodeURIComponent(USER_ID); 
         
         window.location.href = targetFormUrl;
