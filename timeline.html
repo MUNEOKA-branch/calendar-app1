@@ -86,15 +86,22 @@
 
       // タップしたときの処理（Googleフォームへ値を引き渡してジャンプ）
       slot.addEventListener("click", () => {
+        // 「09:30」を「09」と「30」に分解します
+        const timeParts = time.split(":");
+        const hour = timeParts[0];
+        const minute = timeParts[1];
+
+        // 💡 Googleフォームの時刻形式は、時と分で別々の番号（_hour, _minute）に分けて送る必要があります
         const targetFormUrl = FORM_URL +
           "?usp=pp_url" +
           "&entry.634118256=" + encodeURIComponent(DATE_PARAM) +
-          "&entry.1613633312=" + encodeURIComponent(time) +
+          "&entry.1613633312_hour=" + encodeURIComponent(hour) +
+          "&entry.1613633312_minute=" + encodeURIComponent(minute) +
           "&entry.951828721=" + encodeURIComponent(USER_ID); 
         
         window.location.href = targetFormUrl;
       });
-
+      
       return slot;
     }
   </script>
