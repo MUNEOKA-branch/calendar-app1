@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>カレンダー日程選択</title>
-
-　<script src="https://line-scdn.net"></script>
+  
+  <!-- 💡 LINE LIFFの公式SDK（最上部で確実に読み込みます） -->
+  <script src="https://line-scdn.net"></script>
   
   <style>
   body {
@@ -95,10 +96,11 @@
     <div id="calendarGrid" class="calendar-grid"></div>
   </div>
 
-  <!-- デバッグ用の表示エリア -->
-  <pre id="debugLog" style="white-space: pre-wrap; color: red; font-size: 12px; background: #fff; padding: 5px; margin-top: 20px; border: 1px solid #ccc;"></pre>
+  <!-- 💡 デバッグ用のログエリアを「display: none;」にして本番画面から完全に隠しました -->
+  <pre id="debugLog" style="display: none; white-space: pre-wrap; color: red; font-size: 12px; background: #fff; padding: 5px; margin-top: 20px; border: 1px solid #ccc;"></pre>
 
   <script>
+  // ⚠️ あなたの新しいLIFF IDに書き換えてください
   const LIFF_ID = "2010335869-v7gGXCYE";
   let USER_ID = "GUEST_USER"; 
   let current = new Date();
@@ -117,13 +119,12 @@
   async function initLINE() {
     printLog("LINE(LIFF)の接続テストを開始します...");
     try {
-      // 💡 LINE公式のSDK（本物のLIFF）が読み込まれているか確認
-      if (typeof liff !== "undefined" && typeof liff.init === "function" && !liff._mocked) {
+      // 💡 判定を修正：公式SDKの「liff.init」が存在すれば、最優先で本物のLINEへ接続します
+      if (typeof liff !== "undefined" && typeof liff.init === "function") {
         printLog("本物のLINE環境を検出しました。接続を開始します。");
         await liff.init({ liffId: LIFF_ID });
         printLog("LINE初期化成功!");
 
-        // ログインしていない場合はログイン画面を挟む（これで確実にIDを取ります）
         if (!liff.isLoggedIn()) {
           printLog("ログインされていません。ログインを行います。");
           liff.login();
@@ -133,10 +134,10 @@
         const profile = await liff.getProfile();
         USER_ID = profile.userId;
         printLog("本物のLINEユーザーIDの取得に成功: " + USER_ID);
-        return; // 本物のIDが取れたのでここで処理を終了します
+        return; 
       }
 
-      // 🖥️ 以下はパソコンのブラウザ用（LINEアプリ以外）の「身代わり処理」です
+      // 🖥️ 以下はPCブラウザでのテスト用身代わり処理です
       printLog("PCブラウザ環境のため、身代わりSDKを起動します。");
       window.liff = window.liff || {
         init: function(c) { return Promise.resolve(); },
@@ -186,17 +187,13 @@
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       cell.dataset.date = dateStr;
 
-       cell.addEventListener("click", () => {
+      cell.addEventListener("click", () => {
         cell.style.backgroundColor = "#FDECEC";
         
         // 💡 177行目は、このようにバッククォート `` で囲まれた「完全に1行のきれいなURL」にします
         const targetUrl = "https://muneoka-branch.github.io/calendar-app1/timeline.html?date=" + dateStr + "&userId=" + USER_ID;
         
-        // 💡 LINEアプリの中でそのままスマートに開く設定（false）にします
-        liff.openWindow({
-          url: targetUrl,
-          external: false
-        });
+        window.location.href = targetUrl;
       });
 
       grid.appendChild(cell);
