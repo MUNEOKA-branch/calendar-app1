@@ -96,62 +96,38 @@
     <div id="calendarGrid" class="calendar-grid"></div>
   </div>
 
-  <!-- 💡 デバッグ用のログエリアを「display: none;」にして本番画面から完全に隠しました -->
-  <pre id="debugLog" style="display: none; white-space: pre-wrap; color: red; font-size: 12px; background: #fff; padding: 5px; margin-top: 20px; border: 1px solid #ccc;"></pre>
-
   <script>
   // ⚠️ あなたの新しいLIFF IDに書き換えてください
   const LIFF_ID = "2010335869-v7gGXCYE";
   let USER_ID = "GUEST_USER"; 
   let current = new Date();
 
-  function printLog(msg) {
-    const d = document.getElementById("debugLog");
-    if (d) d.innerText += msg + "\n";
-  }
-
   window.addEventListener("DOMContentLoaded", () => {
-    printLog("画面の読み込みが完了しました。カレンダーを描きます。");
     renderCalendar();
     initLINE();
   });
 
   async function initLINE() {
-    printLog("LINE(LIFF)の接続テストを開始します...");
+    // 💡 エラーの原因だった「window.liff = ...」の身代わり処理を完全に撤去しました！
     try {
-      // 💡 判定を修正：公式SDKの「liff.init」が存在すれば、最優先で本物のLINEへ接続します
       if (typeof liff !== "undefined" && typeof liff.init === "function") {
-        printLog("本物のLINE環境を検出しました。接続を開始します。");
         await liff.init({ liffId: LIFF_ID });
-        printLog("LINE初期化成功!");
 
         if (!liff.isLoggedIn()) {
-          printLog("ログインされていません。ログインを行います。");
           liff.login();
           return;
         }
 
         const profile = await liff.getProfile();
         USER_ID = profile.userId;
-        printLog("本物のLINEユーザーIDの取得に成功: " + USER_ID);
-        return; 
+        console.log("LINEユーザーID取得成功: " + USER_ID);
+      } else {
+        // LINEアプリ外（PCブラウザなど）で開かれた場合の安全なフォールバック
+        USER_ID = "PC_BROWSER_TEST_USER";
+        console.log("LINE環境外のためテスト用IDを使用します");
       }
-
-      // 🖥️ 以下はPCブラウザでのテスト用身代わり処理です
-      printLog("PCブラウザ環境のため、身代わりSDKを起動します。");
-      window.liff = window.liff || {
-        init: function(c) { return Promise.resolve(); },
-        isInClient: function() { return false; },
-        isLoggedIn: function() { return true; },
-        getProfile: function() { return Promise.resolve({ userId: "PC_BROWSER_TEST_USER" }); },
-        openWindow: function(options) {
-          if (options && options.url) window.location.href = options.url;
-        }
-      };
-      USER_ID = "PC_BROWSER_TEST_USER";
-      
     } catch (err) {
-      printLog("LINEの接続中にエラーが発生しました: " + err.message);
+      console.error("LINEの接続中にエラーが発生しました: " + err.message);
     }
   }
 
