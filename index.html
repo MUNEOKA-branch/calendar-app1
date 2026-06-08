@@ -115,25 +115,37 @@
   async function initLINE() {
     printLog("LINE(LIFF)の接続テストを開始します...");
     try {
-      // 💡 カッコのズレをなくし、完璧に整形したジャンプ機能付きの身代わりSDKです
+      // 💡 LINE公式のSDK（本物のLIFF）が読み込まれているか確認
+      if (typeof liff !== "undefined" && typeof liff.init === "function" && !liff._mocked) {
+        printLog("本物のLINE環境を検出しました。接続を開始します。");
+        await liff.init({ liffId: LIFF_ID });
+        printLog("LINE初期化成功!");
+
+        // ログインしていない場合はログイン画面を挟む（これで確実にIDを取ります）
+        if (!liff.isLoggedIn()) {
+          printLog("ログインされていません。ログインを行います。");
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        USER_ID = profile.userId;
+        printLog("本物のLINEユーザーIDの取得に成功: " + USER_ID);
+        return; // 本物のIDが取れたのでここで処理を終了します
+      }
+
+      // 🖥️ 以下はパソコンのブラウザ用（LINEアプリ以外）の「身代わり処理」です
+      printLog("PCブラウザ環境のため、身代わりSDKを起動します。");
       window.liff = window.liff || {
         init: function(c) { return Promise.resolve(); },
-        isInClient: function() { return true; },
+        isInClient: function() { return false; },
         isLoggedIn: function() { return true; },
-        getProfile: function() { return Promise.resolve({ userId: "LINE_USER_CONNECTED_SUCCESS" }); },
+        getProfile: function() { return Promise.resolve({ userId: "PC_BROWSER_TEST_USER" }); },
         openWindow: function(options) {
-          if (options && options.url) {
-            window.location.href = options.url;
-          }
+          if (options && options.url) window.location.href = options.url;
         }
       };
-
-      await liff.init({ liffId: LIFF_ID });
-      printLog("LINE初期化成功!");
-
-      const profile = await liff.getProfile();
-      USER_ID = profile.userId;
-      printLog("LINEユーザーIDの取得に成功: " + USER_ID);
+      USER_ID = "PC_BROWSER_TEST_USER";
       
     } catch (err) {
       printLog("LINEの接続中にエラーが発生しました: " + err.message);
