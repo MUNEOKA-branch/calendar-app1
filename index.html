@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>カレンダー日程選択</title>
   
-  <!-- 💡 LINE LIFFの公式SDK（最上部で確実に読み込みます） -->
+  <!-- LINE LIFFの公式SDKを最上部で読み込みます -->
   <script src="https://line-scdn.net"></script>
   
   <style>
@@ -15,12 +15,24 @@
     margin: 0;
     padding: 0;
   }
+  .loading-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #F2F4F7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    color: #6B7280;
+    z-index: 9999;
+  }
   .calendar {
     width: 100%;
     max-width: 850px;
     margin: 0 auto;
     padding: 16px;
     box-sizing: border-box;
+    display: none; /* LINE初期化が完了するまで非表示にします */
   }
   .month-nav {
     display: flex;
@@ -73,9 +85,7 @@
   .calendar-cell.today::after {
     content: "";
     position: absolute;
-    left: 4px;
-    right: 4px;
-    bottom: 4px;
+    left: 4px; right: 4px; bottom: 4px;
     height: 3px;
     background-color: #3A7AFE;
   }
@@ -84,7 +94,11 @@
 </head>
 <body>
 
-  <div class="calendar">
+  <!-- 読み込み中画面 -->
+  <div id="loading" class="loading-screen">LINEに接続中...</div>
+
+  <!-- カレンダー本体 -->
+  <div id="calendarApp" class="calendar">
     <div class="month-nav">
       <button class="nav-btn" id="prev">◀</button>
       <span id="monthTitle"></span>
@@ -97,37 +111,45 @@
   </div>
 
   <script>
-  // ⚠️ あなたの新しいLIFF IDに書き換えてください
+  // ⚠️ あなたの新しいLIFF IDであることを確認してください
   const LIFF_ID = "2010335869-v7gGXCYE";
   let USER_ID = "GUEST_USER"; 
   let current = new Date();
 
-  window.addEventListener("DOMContentLoaded", () => {
+  // 画面が読み込まれたら、まずLINEの初期化を「最優先」で実行します [1]
+  window.addEventListener("DOMContentLoaded", async () => {
+    await initLINE();
     renderCalendar();
-    initLINE();
   });
 
   async function initLINE() {
-    // 💡 エラーの原因だった「window.liff = ...」の身代わり処理を完全に撤去しました！
     try {
+      // LINEの公式システムが正しく読み込まれている場合のみ処理を実行
       if (typeof liff !== "undefined" && typeof liff.init === "function") {
         await liff.init({ liffId: LIFF_ID });
 
+        // ログインチェックを行い、未ログインなら強制的に画面を挟みます [1]
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
 
+        // プロファイルから本物のユーザーIDを取得します [1]
         const profile = await liff.getProfile();
         USER_ID = profile.userId;
-        console.log("LINEユーザーID取得成功: " + USER_ID);
+        console.log("LINEユーザーIDの取得に成功しました: " + USER_ID);
       } else {
-        // LINEアプリ外（PCブラウザなど）で開かれた場合の安全なフォールバック
+        // PCブラウザ環境など、LINE外で開かれた場合のみのフォールバック
         USER_ID = "PC_BROWSER_TEST_USER";
         console.log("LINE環境外のためテスト用IDを使用します");
       }
     } catch (err) {
-      console.error("LINEの接続中にエラーが発生しました: " + err.message);
+      console.error("LINEの初期化中にエラーが発生しました: " + err.message);
+      USER_ID = "ERROR_FALLBACK_USER";
+    } finally {
+      // 初期化がすべて終わったら、読み込み画面を消してカレンダーを表示します
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("calendarApp").style.display = "block";
     }
   }
 
@@ -165,7 +187,6 @@
 
       cell.addEventListener("click", () => {
         cell.style.backgroundColor = "#FDECEC";
-        
         // 💡 177行目は、このようにバッククォート `` で囲まれた「完全に1行のきれいなURL」にします
         const targetUrl = "https://muneoka-branch.github.io/calendar-app1/timeline.html?date=" + dateStr + "&userId=" + USER_ID;
         
