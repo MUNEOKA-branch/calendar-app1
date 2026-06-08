@@ -68,6 +68,8 @@
         // まだ初期化されていない場合のみ、公式の接続を行います
         await liff.init({ liffId: LIFF_ID });
 
+        liff.logout(); 
+
         if (!liff.isLoggedIn()) {
           liff.login();
           return;
