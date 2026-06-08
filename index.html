@@ -5,94 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>カレンダー日程選択</title>
   
-  <!-- 💡 LINE LIFFの公式SDKを最上部で確実に読み込みます -->
+  <!-- LINE LIFFの公式SDK -->
   <script src="https://line-scdn.net"></script>
   
   <style>
-  body {
-    background-color: #F2F4F7;
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0;
-  }
-  .user-welcome {
-    background-color: #FFFFFF;
-    padding: 12px 16px;
-    margin-bottom: 12px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #1A1A1A;
-    border-bottom: 1px solid #D0D5DD;
-    text-align: center;
-  }
-  .calendar {
-    width: 100%;
-    max-width: 850px;
-    margin: 0 auto;
-    padding: 16px;
-    box-sizing: border-box;
-  }
-  .month-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 22px;
-    margin-bottom: 12px;
-  }
-  .nav-btn {
-    background: none;
-    border: none;
-    font-size: 22px;
-    padding: 8px 16px;
-    cursor: pointer;
-  }
-  .weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    text-align: center;
-    color: #6B7280;
-    margin-bottom: 8px;
-    font-size: 16px;
-  }
+  body { background-color: #F2F4F7; font-family: sans-serif; margin: 0; padding: 0; }
+  .user-welcome { background-color: #FFFFFF; padding: 12px 16px; margin-bottom: 12px; font-size: 16px; font-weight: bold; color: #1A1A1A; border-bottom: 1px solid #D0D5DD; text-align: center; }
+  .calendar { width: 100%; max-width: 850px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+  .month-nav { display: flex; justify-content: space-between; align-items: center; font-size: 22px; margin-bottom: 12px; }
+  .nav-btn { background: none; border: none; font-size: 22px; padding: 8px 16px; cursor: pointer; }
+  .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; color: #6B7280; margin-bottom: 8px; font-size: 16px; }
   .weekdays span:nth-child(6) { color: #3A7AFE; }
   .weekdays span:nth-child(7) { color: #E57373; }
-  .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-  }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .calendar-grid > div:nth-child(7n) { color: #E57373; }
   .calendar-grid > div:nth-child(7n + 6) { color: #3A7AFE; }
-  .calendar-cell {
-    border: 1px solid #D0D5DD;
-    background-color: #FFFFFF;
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: #1A1A1A;
-    position: relative;
-    user-select: none;
-    border-radius: 4px;
-  }
-  .calendar-cell.empty {
-    background-color: #F2F4F7;
-    border: none;
-  }
-  .calendar-cell.today::after {
-    content: "";
-    position: absolute;
-    left: 4px; right: 4px; bottom: 4px;
-    height: 3px;
-    background-color: #3A7AFE;
-  }
+  .calendar-cell { border: 1px solid #D0D5DD; background-color: #FFFFFF; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #1A1A1A; position: relative; user-select: none; border-radius: 4px; }
+  .calendar-cell.empty { background-color: #F2F4F7; border: none; }
+  .calendar-cell.today::after { content: ""; position: absolute; left: 4px; right: 4px; bottom: 4px; height: 3px; background-color: #3A7AFE; }
   .calendar-cell:active { background-color: #FDECEC; }
   </style>
 </head>
 <body>
 
-  <!-- 👤 ユーザー名表示エリア（最初は接続中） -->
+  <!-- 👤 ユーザー名表示エリア -->
   <div id="welcomeMessage" class="user-welcome">LINEに接続しています...</div>
 
   <div class="calendar">
@@ -108,59 +44,59 @@
   </div>
 
   <script>
-  // 💡 あなたの最新のLIFF IDに固定しました
   const LIFF_ID = "2010335869-v7gGXCYE";
   let USER_ID = "GUEST_USER"; 
   let current = new Date();
 
-  window.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("DOMContentLoaded", async () => {
     renderCalendar();
-    
-    // 💡 0.001秒のフライングを完全に防ぐため、少しだけ待ってから確実にLINEを起動させます
-    setTimeout(() => {
-      initLINE();
-    }, 300); 
+    await initLINE();
   });
 
   async function initLINE() {
     try {
-      // 💡 もし本物のLINE（liff）がまだ準備できていなかったら、最大10回（5秒間）自動で再確認を繰り返す「ゾンビ起動処理」を仕込みました
-      let retryCount = 0;
-      while (typeof liff === "undefined" || typeof liff.init !== "function") {
-        if (retryCount > 10) {
-          throw new Error("LINE SDKの読み込みタイムアウト");
+      if (typeof liff !== "undefined" && typeof liff.init === "function") {
+        
+        // 💡 【重要】もしすでにLINEが裏で初期化（ログイン済み）されていたら、エラーを起こさず即座にIDを回収します
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          USER_ID = profile.userId;
+          document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
+          return;
         }
-        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5秒待つ
-        retryCount++;
+
+        // まだ初期化されていない場合のみ、公式の接続を行います
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        USER_ID = profile.userId;
+        document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
+        console.log("LINEユーザーIDの取得に成功: " + USER_ID);
+      } else {
+        USER_ID = "PC_BROWSER_TEST_USER";
+        document.getElementById("welcomeMessage").textContent = "ようこそ、テスト ユーザー さん (PC環境)";
       }
-
-      // 💡 ここを通過したということは、100%完璧に公式SDKの準備が整っています
-      await liff.init({ liffId: LIFF_ID });
-
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-
-      // 本物のLINEからプロファイル情報を取得
-      const profile = await liff.getProfile();
-      USER_ID = profile.userId;
-      
-      // 画面上部にお名前を表示！
-      document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
-      console.log("LINEユーザーID取得に成功: " + USER_ID);
-
     } catch (err) {
       console.error("LINE接続エラー: " + err.message);
       
-      // LINEアプリの外（PCのブラウザなどのテスト）の時だけ、ここを通ります
-      if (window.navigator.userAgent.indexOf('Line') === -1) {
-        USER_ID = "PC_BROWSER_TEST_USER";
-        document.getElementById("welcomeMessage").textContent = "ようこそ、テスト ユーザー さん (PC環境)";
-      } else {
-        USER_ID = "ERROR_FALLBACK_USER";
-        document.getElementById("welcomeMessage").textContent = "LINEログインの接続に失敗しました";
-      }
+      // 💡 エラーが発生しても、すでに裏でIDが取れている可能性を最終チェックする超強力な保険
+      try {
+        const profile = await liff.getProfile();
+        if(profile && profile.userId) {
+          USER_ID = profile.userId;
+          document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
+          return;
+        }
+      } catch(e) {}
+
+      // 本当に取得できなかった場合のみ、エラーを表示します
+      USER_ID = "ERROR_FALLBACK_USER";
+      document.getElementById("welcomeMessage").textContent = "LINEログインの接続に失敗しました（再起動してください）";
     }
   }
 
