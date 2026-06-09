@@ -53,35 +53,45 @@
     await initLINE();
   });
 
- async function initLINE() {
+  async function initLINE() {
     try {
-      // ◯ 1. まず何よりも先に、一番最初にLINEへ接続（初期化）します
-      if (typeof liff !== "undefined" && typeof liff.init === "function") {
-        await liff.init({ liffId: LIFF_ID });
-        console.log("LINE初期化に成功しました");
-
-        // ◯ 2. スマホのLINEアプリ内なら、最初から自動でログインされています。
-        // 余計なログアウトや手動ログイン（liff.login）は一切呼び出さず、ストレートに進みます
-        if (liff.isLoggedIn()) {
-          const profile = await liff.getProfile();
-          USER_ID = profile.userId; // 本物のID（U...）をガチッと固定
-          document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん（本番稼働）`;
-          console.log("本物のユーザーID取得成功: " + USER_ID);
-          return;
-        } else {
-          // 万が一、アプリ外で未ログインの場合のみログイン画面を出します
-          liff.login();
-          return;
+      let retryCount = 0;
+      
+      // ⏳ スマホがLINE公式の部品（liff）をダウンロードしてくるまで、0.1秒ずつ最大20回（2秒間）自動で待機（一時停止）します
+      while (typeof liff === "undefined" || typeof liff.init !== "function") {
+        if (retryCount > 20) {
+          throw new Error("LINE公式部品の読み込みタイムアウト");
         }
-      } else {
-        // 🖥️ 完全にLINEの外（PCブラウザなど）の時のみ、このテスト用ルートが進みます
-        USER_ID = "PC_BROWSER_TEST_USER";
-        document.getElementById("welcomeMessage").textContent = "★LINE公式の部品を捕まえる前に、ここを通過しました★";
+        await new Promise(resolve => setTimeout(resolve, 100)); // 0.1秒待つ
+        retryCount++;
       }
+
+      // ◯ ここを通過したということは、100%完璧に公式部品がスマホに届いています！
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      // 本物のLINEからプロファイル（名前と本物ID）を回収
+      const profile = await liff.getProfile();
+      USER_ID = profile.userId; // 本物のID（U...）をガチッと固定
+      
+      document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん（本番稼働）`;
+      console.log("本物のユーザーID取得成功: " + USER_ID);
+
     } catch (err) {
       console.error("LINE接続エラーが発生しました: " + err.message);
-      USER_ID = "ERROR_FALLBACK_USER";
-      document.getElementById("welcomeMessage").textContent = "LINEログインの接続に失敗しました";
+      
+      // 🖥️ 完全にLINEの外（PCブラウザなど）の時のみ、初めてこのテスト用ルートが進みます
+      if (window.navigator.userAgent.indexOf('Line') === -1) {
+        USER_ID = "PC_BROWSER_TEST_USER";
+        document.getElementById("welcomeMessage").textContent = "ようこそ、テスト ユーザー さん (PC環境)";
+      } else {
+        USER_ID = "ERROR_FALLBACK_USER";
+        document.getElementById("welcomeMessage").textContent = "LINEログインの接続に失敗しました（アプリを再起動してください）";
+      }
     }
   }
   function renderCalendar() {
