@@ -53,55 +53,37 @@
     await initLINE();
   });
 
-  async function initLINE() {
+ async function initLINE() {
     try {
+      // ◯ 1. まず何よりも先に、一番最初にLINEへ接続（初期化）します
       if (typeof liff !== "undefined" && typeof liff.init === "function") {
-        
-        // 💡 【重要】もしすでにLINEが裏で初期化（ログイン済み）されていたら、エラーを起こさず即座にIDを回収します
+        await liff.init({ liffId: LIFF_ID });
+        console.log("LINE初期化に成功しました");
+
+        // ◯ 2. スマホのLINEアプリ内なら、最初から自動でログインされています。
+        // 余計なログアウトや手動ログイン（liff.login）は一切呼び出さず、ストレートに進みます
         if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
-          USER_ID = profile.userId;
-          document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
+          USER_ID = profile.userId; // 本物のID（U...）をガチッと固定
+          document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん（本番稼働）`;
+          console.log("本物のユーザーID取得成功: " + USER_ID);
           return;
-        }
-
-        // まだ初期化されていない場合のみ、公式の接続を行います
-        await liff.init({ liffId: LIFF_ID });
-
-        liff.logout(); 
-
-        if (!liff.isLoggedIn()) {
+        } else {
+          // 万が一、アプリ外で未ログインの場合のみログイン画面を出します
           liff.login();
           return;
         }
-
-        const profile = await liff.getProfile();
-        USER_ID = profile.userId;
-        document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
-        console.log("LINEユーザーIDの取得に成功: " + USER_ID);
       } else {
+        // 🖥️ 完全にLINEの外（PCブラウザなど）の時のみ、このテスト用ルートが進みます
         USER_ID = "PC_BROWSER_TEST_USER";
-        document.getElementById("welcomeMessage").textContent = "ようこそ、テスト ユーザー 2さん (PC環境)";
+        document.getElementById("welcomeMessage").textContent = "ようこそ、テスト ユーザー さん (PC環境)";
       }
     } catch (err) {
-      console.error("LINE接続エラー: " + err.message);
-      
-      // 💡 エラーが発生しても、すでに裏でIDが取れている可能性を最終チェックする超強力な保険
-      try {
-        const profile = await liff.getProfile();
-        if(profile && profile.userId) {
-          USER_ID = profile.userId;
-          document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
-          return;
-        }
-      } catch(e) {}
-
-      // 本当に取得できなかった場合のみ、エラーを表示します
+      console.error("LINE接続エラーが発生しました: " + err.message);
       USER_ID = "ERROR_FALLBACK_USER";
-      document.getElementById("welcomeMessage").textContent = "LINEログインの接続に失敗しました（再起動してください）";
+      document.getElementById("welcomeMessage").textContent = "LINEログインの接続に失敗しました";
     }
   }
-
   function renderCalendar() {
     const year = current.getFullYear();
     const month = current.getMonth();
