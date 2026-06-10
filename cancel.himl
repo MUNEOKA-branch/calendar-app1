@@ -38,7 +38,7 @@
     const LIFF_ID = "2010335869-v7gGXCYE";
     
     // ⚠️【ここだけ書き換え！】先ほどコピーしたあなたのご自身の「新しいウェブアプリURL」に書き換えてください！
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzIVWp9Y3aXYKZDYOYXJnoXJnMkVX_auhZ6sYSzrV1U1H5Ond2WrRByNxbf9z7ijIsp/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbw-LscUI6FzBtKh2rO_mQGst_ETnGpIQK1Snncxb1C3WR4zQ-doTy-IaMh1vqTWA8Th/exec";
 
     let USER_ID = "GUEST_USER";
 
