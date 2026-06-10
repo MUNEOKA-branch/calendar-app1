@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>予約確認・キャンセル</title>
+  
+  <!-- 💡 完璧に欠損しない最新のLINE SDKです -->
+  <script src="https://line-scdn.net"></script>
+  
+  <style>
+    body { background-color: #F2F4F7; font-family: sans-serif; margin: 0; padding: 0; }
+    .container { width: 100%; max-width: 500px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+    .user-welcome { background-color: #FFFFFF; padding: 12px 16px; margin-bottom: 16px; font-size: 16px; font-weight: bold; color: #1A1A1A; border-bottom: 1px solid #D0D5DD; text-align: center; }
+    .card { background: #ffffff; padding: 16px; border-radius: 8px; border: 1px solid #D0D5DD; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 12px; }
+    .no-booking { text-align: center; color: #667085; padding: 30px; font-size: 16px; }
+    .booking-title { font-size: 18px; font-weight: bold; color: #1A1A1A; margin: 0 0 8px 0; }
+    .booking-meta { font-size: 14px; color: #475467; margin-bottom: 12px; line-height: 1.5; }
+    .cancel-btn { width: 100%; padding: 12px; background-color: #E57373; color: #fff; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; }
+    .cancel-btn:active { background-color: #D32F2F; }
+    .status-msg { text-align: center; font-size: 14px; color: #3A7AFE; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- 👤 ユーザー名表示エリア -->
+  <div id="welcomeMessage" class="user-welcome">LINEに接続しています...</div>
+
+  <div class="container">
+    <!-- 📋 予約一覧が自動で生成されるエリア -->
+    <div id="bookingList">
+      <div class="no-booking">予約情報を読み込んでいます...</div>
+    </div>
+  </div>
+
+  <script>
+    // あなたの最新のLIFF ID
+    const LIFF_ID = "2010335869-v7gGXCYE";
+    
+    // ⚠️【ここだけ書き換え！】先ほどコピーしたあなたのご自身の「新しいウェブアプリURL」に書き換えてください！
+    const GAS_API_URL = "https://google.com";
+
+    let USER_ID = "GUEST_USER";
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      await initLINE();
+    });
+
+    // フライングを完全に防ぐ接続プログラム
+    async function initLINE() {
+      try {
+        let retryCount = 0;
+        while (typeof liff === "undefined" || typeof liff.init !== "function") {
+          if (retryCount > 20) { throw new Error("LINE公式部品の読み込みタイムアウト"); }
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retryCount++;
+        }
+
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        USER_ID = profile.userId;
+        document.getElementById("welcomeMessage").textContent = `${profile.displayName} さんの予約一覧`;
+        
+        // ログインが成功したら、この人の予約をスプレッドシートから引っ張ってくる
+        await fetchUserBookings();
+
+      } catch (err) {
+        console.error("LINE接続エラー:", err);
+        document.getElementById("welcomeMessage").textContent = "予約一覧（PC環境テスト）";
+        USER_ID = "PC_BROWSER_TEST_USER"; 
+        await fetchUserBookings();
+      }
+    }
+
+    // スプレッドシートから「この人の予約だけ」を抜き出して画面に描く関数
+    async function fetchUserBookings() {
+      const listContainer = document.getElementById("bookingList");
+      try {
+        const response = await fetch(`${GAS_API_URL}?action=get_user_bookings&userId=${USER_ID}`);
+        const bookings = await response.json();
+
+        if (!bookings || bookings.length === 0) {
+          listContainer.innerHTML = '<div class="no-booking">📅 現在、ご予約はありません。</div>';
+          return;
+        }
+
+        listContainer.innerHTML = ""; 
+        
+        bookings.forEach(booking => {
+          const card = document.createElement("div");
+          card.className = "card";
+          
+          const bDate = new Date(booking.date);
+          const dateStr = `${bDate.getFullYear()}年${bDate.getMonth() + 1}月${bDate.getDate()}日`;
+
+          card.innerHTML = `
+            <div class="booking-title">💡 ご予約確定分</div>
+            <div class="booking-meta">
+              ⏰ <strong>日時：</strong> ${dateStr} ${booking.time}〜<br>
+              👤 <strong>お名前：</strong> ${booking.name} 様
+            </div>
+            <button class="cancel-btn" onclick="executeCancel('${booking.date}', '${booking.time}', this)">この予約をキャンセルする</button>
+            <div class="status-msg">キャンセル処理中...</div>
+          `;
+          listContainer.appendChild(card);
+        });
+
+      } catch (e) {
+        console.error("予約データの取得に失敗:", e);
+        listContainer.innerHTML = '<div class="no-booking">⚠️ データの読み込みに失敗しました。</div>';
+      }
+    }
+
+    // キャンセルボタンが押された時の消去処理
+    async function executeCancel(dateStr, timeStr, buttonEl) {
+      if (!confirm(`${timeStr} の予約を本当にキャンセルしてもよろしいですか？`)) {
+        return; 
+      }
+
+      const cardEl = buttonEl.parentElement;
+      const statusEl = cardEl.querySelector(".status-msg");
+      
+      buttonEl.style.display = "none"; 
+      statusEl.style.display = "block";
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            userId: USER_ID,
+            date: dateStr,
+            time: timeStr
+          })
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+          alert("予約のキャンセルが完了しました。");
+          await fetchUserBookings();
+        } else {
+          alert("エラー: " + result.message);
+          buttonEl.style.display = "block";
+          statusEl.style.display = "none";
+        }
+      } catch (e) {
+        alert("通信エラーが発生しました。時間を置いて再度お試しください。");
+        buttonEl.style.display = "block";
+        statusEl.style.display = "none";
+      }
+    }
+  </script>
+</body>
+</html>
