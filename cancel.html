@@ -83,7 +83,8 @@
       const listContainer = document.getElementById("bookingList");
       try {
         const response = await fetch(`${GAS_API_URL}?action=get_user_bookings&userId=${USER_ID}`, { redirect: "follow" });
-        const bookings = await response.json();
+        const rawText = await response.text();
+        const bookings = JSON.parse(rawText);
 
         if (!bookings || bookings.length === 0) {
           listContainer.innerHTML = '<div class="no-booking">📅 現在、ご予約はありません。</div>';
