@@ -154,7 +154,7 @@
           statusEl.style.display = "none";
         }
       } catch (e) {
-        alert("通信エラーが発生しました。時間を置いて再度お試しください。");
+        alert("【検証ログ】エラーの正体 ➔ " + (e.message || e.toString()));
         buttonEl.style.display = "block";
         statusEl.style.display = "none";
       }
