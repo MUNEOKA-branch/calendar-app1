@@ -82,7 +82,10 @@
     async function fetchUserBookings() {
       const listContainer = document.getElementById("bookingList");
       try {
-        const response = await fetch(`${GAS_API_URL}?action=get_user_bookings&userId=${USER_ID}`, { redirect: "follow" });
+         const response = await fetch(`${GAS_API_URL}?action=get_user_bookings&userId=${USER_ID}`, {
+          method: "GET",
+          redirect: "follow"
+        });
         const rawText = await response.text();
         const bookings = JSON.parse(rawText);
 
