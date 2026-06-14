@@ -103,14 +103,15 @@
           const bDate = new Date(booking.date);
           const dateStr = `${bDate.getFullYear()}年${bDate.getMonth() + 1}月${bDate.getDate()}日`;
 
+          // 🎯 【修理箇所1】ボタンを押したときに、エラーの元だった通信（fetch）を呼ばず、
+          // GASから届いたGoogleフォームのURL（booking.url）へ安全に飛ばす形に書き換えました！
           card.innerHTML = `
             <div class="booking-title">💡 ご予約確定分</div>
             <div class="booking-meta">
               ⏰ <strong>日時：</strong> ${dateStr} ${booking.time}〜<br>
               👤 <strong>お名前：</strong> ${booking.name} 様
             </div>
-            <button class="cancel-btn" onclick="executeCancel('${booking.date}', '${booking.time}', this)">この予約をキャンセルする</button>
-            <div class="status-msg">キャンセル処理中...</div>
+            <button class="cancel-btn" onclick="executeCancel('${booking.url}')">この予約をキャンセル（変更）する</button>
           `;
           listContainer.appendChild(card);
         });
@@ -121,45 +122,17 @@
       }
     }
 
-    // キャンセルボタンが押された時の消去処理
-    async function executeCancel(dateStr, timeStr, buttonEl) {
-      if (!confirm(`${timeStr} の予約を本当にキャンセルしてもよろしいですか？`)) {
-        return; 
+    // 🎯 【修理箇所2】「executeCancel」の中身を、通信エラーが起きる重いプログラムから、
+    // 届いたURL（googleFormUrl）へ画面を一瞬で切り替えるだけの、最も安全でシンプルな処理に100%作り直しました！
+    function executeCancel(googleFormUrl) {
+      if (!googleFormUrl || googleFormUrl === "undefined") {
+        alert("エラー：削除用のURLがスプレッドシートのH列に見つかりません。管理者にお問い合わせください。");
+        return;
       }
-
-      const cardEl = buttonEl.parentElement;
-      const statusEl = cardEl.querySelector(".status-msg");
       
-      buttonEl.style.display = "none"; 
-      statusEl.style.display = "block";
-
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: "POST",
-          mode: "cors",
-          headers: {
-            "Content-Type": "text/plain"
-          },
-          body: JSON.stringify({
-            userId: USER_ID,
-            date: dateStr,
-            time: timeStr
-          })
-        });
-        const result = await response.json();
-
-        if (result.status === "success") {
-          alert("予約のキャンセルが完了しました。");
-          await fetchUserBookings();
-        } else {
-          alert("エラー: " + result.message);
-          buttonEl.style.display = "block";
-          statusEl.style.display = "none";
-        }
-      } catch (e) {
-        alert("【検証ログ】エラーの正体 ➔ " + (e.message || e.toString()));
-        buttonEl.style.display = "block";
-        statusEl.style.display = "none";
+      if (confirm("Googleフォームの画面に移動します。画面の一番下にある『回答を削除』または『送信』を押してキャンセルを完了させてください。よろしいですか？")) {
+        // LINEアプリの中で、その人の予約データが最初から詰まった専用フォーム画面へ安全にジャンプします
+        window.location.href = googleFormUrl;
       }
     }
   </script>
