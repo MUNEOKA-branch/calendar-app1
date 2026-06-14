@@ -132,7 +132,7 @@
       
       if (confirm("キャンセルの手続き画面へ移動します。画面の一番下にあるチェックボックスにチェックを入れて『送信』を押してください。よろしいですか？")) {
         // LINEアプリの中で、過去のデータが詰まったフォーム画面へ、余計な文字を混ぜずにストレートにジャンプします！
-        window.location.href = googleFormUrl;
+        window.location.href = googleFormUrl + "&pageHistory=1";
       }
     }
   </script>
