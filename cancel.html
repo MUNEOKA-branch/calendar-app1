@@ -46,13 +46,12 @@
       await initLINE();
     });
 
-    // フライングを完全に防ぐ接続プログラム
+    // 🎯【過不足修正完了】タイマーのカッコを完全に整合させ、LINEのログイン処理を最優先で安全に待ち受けます！
     async function initLINE() {
       try {
         // LINEの公式部品（liff）の準備が整うまで1秒だけ安全に待機します
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // 🎯 カッコを途中で閉じず、LINEの初期化やプロファイル取得をすべてtryの枠の中に正しく収めます！
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
@@ -67,7 +66,7 @@
         // ログインが成功したら、この人の予約をスプレッドシートから引っ張ってくる
         await fetchUserBookings();
 
-      } catch (err) { // 🎯 ここで初めて、すべての処理を包んだ try の枠が美しく閉じ、catchへと繋がります！
+      } catch (err) {
         console.error("LINE接続エラー:", err);
         document.getElementById("welcomeMessage").textContent = "予約一覧（PC環境テスト）";
         USER_ID = "PC_BROWSER_TEST_USER"; 
@@ -100,8 +99,7 @@
           const bDate = new Date(booking.date);
           const dateStr = `${bDate.getFullYear()}年${bDate.getMonth() + 1}月${bDate.getDate()}日`;
 
-          // 🎯 【修理箇所1】ボタンを押したときに、エラーの元だった通信（fetch）を呼ばず、
-          // GASから届いたGoogleフォームのURL（booking.url）へ安全に飛ばす形に書き換えました！
+          // 🎯 ボタンを押したときに、GASから届いたGoogleフォームのURL（booking.url）へ安全に飛ばします！
           card.innerHTML = `
             <div class="booking-title">💡 ご予約確定分</div>
             <div class="booking-meta">
@@ -119,8 +117,7 @@
       }
     }
 
-    // 🎯 【修理箇所2】「executeCancel」の中身を、通信エラーが起きる重いプログラムから、
-    // 届いたURL（googleFormUrl）へ画面を一瞬で切り替えるだけの、最も安全でシンプルな処理に100%作り直しました！
+    // 🎯 届いたURL（googleFormUrl）へ画面を一瞬で切り替えるだけの、最も安全でシンプルな処理です
     function executeCancel(googleFormUrl) {
       if (!googleFormUrl || googleFormUrl === "undefined") {
         alert("エラー：削除用のURLがスプレッドシートのH列に見つかりません。管理者にお問い合わせください。");
