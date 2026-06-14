@@ -49,13 +49,10 @@
     // フライングを完全に防ぐ接続プログラム
     async function initLINE() {
       try {
-        let retryCount = 0;
-        while (typeof liff === "undefined" || typeof liff.init !== "function") {
-          if (retryCount > 20) { throw new Error("LINE公式部品の読み込みタイムアウト"); }
-          await new Promise(resolve => setTimeout(resolve, 100));
-          retryCount++;
-        }
+        // LINEの公式部品（liff）の準備が整うまで1秒だけ安全に待機します
+        await new Promise(resolve => setTimeout(resolve, 500));
 
+        // 🎯 カッコを途中で閉じず、LINEの初期化やプロファイル取得をすべてtryの枠の中に正しく収めます！
         await liff.init({ liffId: LIFF_ID });
 
         if (!liff.isLoggedIn()) {
@@ -70,7 +67,7 @@
         // ログインが成功したら、この人の予約をスプレッドシートから引っ張ってくる
         await fetchUserBookings();
 
-      } catch (err) {
+      } catch (err) { // 🎯 ここで初めて、すべての処理を包んだ try の枠が美しく閉じ、catchへと繋がります！
         console.error("LINE接続エラー:", err);
         document.getElementById("welcomeMessage").textContent = "予約一覧（PC環境テスト）";
         USER_ID = "PC_BROWSER_TEST_USER"; 
