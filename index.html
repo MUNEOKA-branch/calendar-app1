@@ -8,14 +8,19 @@
   <!-- LINE LIFFの公式SDK -->
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   
- <style>
+  <style>
+  /* 📱 全体のフォントや余白をスマホ最適化で大きく見やすく変更 */
   body { background-color: #F2F4F7; font-family: sans-serif; margin: 0; padding: 0; }
   .user-welcome { background-color: #FFFFFF; padding: 16px; margin-bottom: 16px; font-size: 18px; font-weight: bold; color: #1A1A1A; border-bottom: 1px solid #D0D5DD; text-align: center; }
   .calendar { width: 100%; max-width: 850px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+  
+  /* 📅 月移動ナビゲーションの文字を大きく（26px） */
   .month-nav { display: flex; justify-content: space-between; align-items: center; font-size: 26px; margin-bottom: 16px; font-weight: bold; }
   .nav-btn { background: none; border: none; font-size: 28px; padding: 8px 24px; cursor: pointer; color: #3A7AFE; }
+  /* ボタンが非表示（無効）になった時のスタイル */
   .nav-btn:disabled { color: #D0D5DD; cursor: not-allowed; visibility: hidden; }
   
+  /* 曜日表示の文字を大きく（18px） */
   .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; color: #6B7280; margin-bottom: 12px; font-size: 18px; font-weight: bold; }
   .weekdays span:nth-child(6) { color: #3A7AFE; }
   .weekdays span:nth-child(7) { color: #E57373; }
@@ -24,25 +29,11 @@
   .calendar-grid > div:nth-child(7n) { color: #E57373; }
   .calendar-grid > div:nth-child(7n + 6) { color: #3A7AFE; }
   
-  .calendar-cell { border: 1px solid #D0D5DD; background-color: #FFFFFF; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; color: #1A1A1A; position: relative; user-select: none; border-radius: 8px; font-weight: bold; }
+  /* 🎯 日付セルの文字を大きく（24px）し、丸みを持たせて押しやすく */
+  .calendar-cell { border: 1px solid #D0D5DD; background-color: #FFFFFF; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #1A1A1A; position: relative; user-select: none; border-radius: 8px; font-weight: bold; }
   .calendar-cell.empty { background-color: #F2F4F7; border: none; }
-  
-  .calendar-cell.today::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 4px; height: 4px; background-color: #3A7AFE; border-radius: 2px; }
+  .calendar-cell.today::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: 6px; height: 4px; background-color: #3A7AFE; border-radius: 2px; }
   .calendar-cell:active { background-color: #FDECEC; }
-
-  /* 💡 予約が入っている日の下に表示する「ポチッと可愛いドット」のデザイン */
-  .has-booking-dot {
-    width: 6px;
-    height: 6px;
-    background-color: #E57373; /* 可愛い薄赤のドット */
-    border-radius: 50%;
-    position: absolute;
-    bottom: 8px;
-  }
-  /* 今日かつ予約がある場合はドットの位置を少し上げる */
-  .calendar-cell.today .has-booking-dot {
-    bottom: 12px;
-  }
   </style>
 </head>
 <body>
@@ -64,16 +55,16 @@
 
   <script>
   const LIFF_ID = "2010335869-v7gGXCYE";
-  // ⚠️【注意】あなたの「本物のGASデプロイURL」に書き換わっているか確認してください
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhU_q5hqx-5Q50nTAo5t_orm18im1fUHKKntz_YTXcvj6j39aW3xjCClSZf_eHSgHB/exec";
-
   let USER_ID = "GUEST_USER"; 
-  const START_DATE = new Date();
-  let current = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
+  
+  // 💡 表示期間を制限するための「基準となる現在の月」
+  const START_DATE = new Date(); 
+  let current = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1); 
 
   window.addEventListener("DOMContentLoaded", async () => {
+    // 💡 原点の安全な動き：先に100%確実にLINE接続を完了させてからカレンダーを描きます
     await initLINE();
-    await renderCalendar();
+    renderCalendar();
   });
 
   async function initLINE() {
@@ -112,20 +103,10 @@
     }
   }
 
-  // 💡 予約日リストをGASから取ってきて、カレンダーを描画する関数
-  async function renderCalendar() {
+  function renderCalendar() {
     const year = current.getFullYear();
     const month = current.getMonth();
     document.getElementById("monthTitle").textContent = `${year}年${month + 1}月`;
-
-    // 🎯 バックグラウンドでGASから「現在予約が入っているすべての日付リスト」を回収します
-    let bookedDates = [];
-    try {
-      const response = await fetch(`${GAS_API_URL}?action=get_all_booked_dates`);
-      bookedDates = await response.json();
-    } catch (e) {
-      console.error("予約日リストの取得に失敗:", e);
-    }
 
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -154,14 +135,7 @@
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       cell.dataset.date = dateStr;
 
-      // 🎯【ドットインデックスの描画】
-      // もし、GASから届いたリストの中にこのマスの日付（dateStr）が含まれていたら、ドットをポチッと配置します
-      if (bookedDates.includes(dateStr)) {
-        const dot = document.createElement("span");
-        dot.className = "has-booking-dot";
-        cell.appendChild(dot);
-      }
-
+      // 🎯【鉄壁のURL連結】外との通信を一切挟まず、バッククォートで確実にジャンプさせます
       cell.addEventListener("click", () => {
         cell.style.backgroundColor = "#FDECEC";
         const targetUrl = `https://github.io{dateStr}&userId=${USER_ID}`;
@@ -171,13 +145,15 @@
       grid.appendChild(cell);
     }
 
-    // 期間制限ロジック（当月から2ヶ月先まで）
+    // 🎯【期間制限ロジック】当月から2ヶ月先（計3ヶ月）の移動ストッパー
     const monthDiff = (current.getFullYear() - START_DATE.getFullYear()) * 12 + (current.getMonth() - START_DATE.getMonth());
+
     if (monthDiff <= 0) {
       document.getElementById("prev").disabled = true;
     } else {
       document.getElementById("prev").disabled = false;
     }
+
     if (monthDiff >= 2) {
       document.getElementById("next").disabled = true;
     } else {
@@ -185,13 +161,13 @@
     }
   }
 
-  document.getElementById("prev").onclick = async () => {
+  document.getElementById("prev").onclick = () => {
     current.setMonth(current.getMonth() - 1);
-    await renderCalendar();
+    renderCalendar();
   };
-  document.getElementById("next").onclick = async () => {
+  document.getElementById("next").onclick = () => {
     current.setMonth(current.getMonth() + 1);
-    await renderCalendar();
+    renderCalendar();
   };
   </script>
 </body>
