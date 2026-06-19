@@ -56,8 +56,23 @@
 
       } catch (err) {
         console.error("LINE接続エラー:", err);
+        
+        // 💡 核心：LINEのシステムが吐き出した「生の拒絶メッセージ」を1文字残さず文字列化します
+        const errorReason = err && err.message ? err.message : JSON.stringify(err);
+        
         document.getElementById("welcomeMessage").textContent = "⚠️ 管理者認証に失敗しました";
-        document.getElementById("bookingList").innerHTML = '<div class="no-booking">LINEアプリ内から正しい権限でアクセスしてください。</div>';
+        
+        // 画面の紺色のエリアに、LINEからの「生の警告内容」を黒枠で叩き出します
+        document.getElementById("bookingList").innerHTML = `
+          <div class="no-booking" style="color: #EF4444; font-weight: bold; text-align: left;">
+            🔴 LINE公式からの拒絶理由：<br>
+            <span style="color: #ffffff; font-family: monospace; background: #000; padding: 8px; display: block; margin-top: 8px; font-size: 14px; word-break: break-all;">
+              ${errorReason}
+            </span>
+            <br>
+            LINEアプリ内から正しい権限でアクセスしてください。
+          </div>
+        `;
       }
     }
 
