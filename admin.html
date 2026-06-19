@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【管理者用】全予約一覧</title>
+  <script src="https://line-scdn.net"></script>
+  <style>
+    body { background-color: #1E293B; font-family: sans-serif; margin: 0; padding: 0; } /* 管理者画面だと一目でわかるシックなダーク背景 */
+    .user-welcome { background-color: #0F172A; padding: 16px; margin-bottom: 16px; font-size: 18px; font-weight: bold; color: #38BDF8; text-align: center; border-bottom: 1px solid #334155; }
+    .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 16px; box-sizing: border-box; }
+    .card { background: #ffffff; padding: 16px; border-radius: 8px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 14px; }
+    .no-booking { text-align: center; color: #94A3B8; padding: 40px; font-size: 16px; }
+    .booking-title { font-size: 16px; font-weight: bold; color: #0284C7; margin: 0 0 8px 0; background: #E0F2FE; display: inline-block; padding: 4px 10px; border-radius: 4px; }
+    .booking-meta { font-size: 16px; color: #334155; line-height: 1.6; }
+    strong { color: #0F172A; }
+  </style>
+</head>
+<body>
+
+  <div id="welcomeMessage" class="user-welcome">管理者認証中...</div>
+
+  <div class="container">
+    <div id="bookingList">
+      <div class="no-booking">全予約情報を読み込んでいます...</div>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️【要設定】LINE Developersで新しく作る「3つ目の管理者用LIFF ID」を入れてください
+    const LIFF_ID = "あなたの管理者用LIFF_ID";
+    // ⚠️ あなたの本物のGASデプロイURLを入れてください
+    const GAS_API_URL = "https://google.com〜/exec";
+
+    let USER_ID = "GUEST_USER";
+
+    window.addEventListener("DOMContentLoaded", async () => {
+      await initLINE();
+    });
+
+    async function initLINE() {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        const profile = await liff.getProfile();
+        USER_ID = profile.userId;
+        document.getElementById("welcomeMessage").textContent = `🛠️ 管理者メニュー（${profile.displayName} 様）`;
+        
+        await fetchAllBookings();
+
+      } catch (err) {
+        console.error("LINE接続エラー:", err);
+        document.getElementById("welcomeMessage").textContent = "⚠️ 管理者認証に失敗しました";
+        document.getElementById("bookingList").innerHTML = '<div class="no-booking">LINEアプリ内から正しい権限でアクセスしてください。</div>';
+      }
+    }
+
+    async function fetchAllBookings() {
+      const listContainer = document.getElementById("bookingList");
+      try {
+        // GASへ「全員分の予約をちょうだい！私のIDはこれだよ」と通信
+        const response = await fetch(`${GAS_API_URL}?action=get_all_active_bookings&userId=${USER_ID}`);
+        const bookings = await response.json();
+
+        // 🔒 セキュリティ拒絶時の対応
+        if (bookings.error) {
+          listContainer.innerHTML = `<div class="no-booking" style="color: #EF4444;">⚠️ エラー: ${bookings.error}</div>`;
+          return;
+        }
+
+        if (!bookings || bookings.length === 0) {
+          listContainer.innerHTML = '<div class="no-booking">📅 現在、有効な予約枠はありません。</div>';
+          return;
+        }
+
+        listContainer.innerHTML = ""; 
+        
+        bookings.forEach(booking => {
+          const card = document.createElement("div");
+          card.className = "card";
+          
+          const bDate = new Date(booking.date);
+          const dateStr = `${bDate.getFullYear()}年${bDate.getMonth() + 1}月${bDate.getDate()}日`;
+
+          card.innerHTML = `
+            <div class="booking-title">👤 ${booking.name} 様</div>
+            <div class="booking-meta">
+              ⏰ <strong>日時：</strong> ${dateStr} ${booking.time}<br>
+              📝 <strong>用途：</strong> ${booking.purpose}
+            </div>
+          `;
+          listContainer.appendChild(card);
+        });
+
+      } catch (e) {
+        console.error("データ取得失敗:", e);
+        listContainer.innerHTML = '<div class="no-booking">⚠️ データの読み込みに失敗しました。</div>';
+      }
+    }
+  </script>
+</body>
+</html>
