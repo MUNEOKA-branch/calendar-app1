@@ -72,8 +72,8 @@
   let current = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
 
   window.addEventListener("DOMContentLoaded", async () => {
-    await renderCalendar();
     await initLINE();
+    await renderCalendar();
   });
 
   async function initLINE() {
