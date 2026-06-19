@@ -164,7 +164,7 @@
 
       cell.addEventListener("click", () => {
         cell.style.backgroundColor = "#FDECEC";
-        const targetUrl = "https://github.io" + dateStr + "&userId=" + USER_ID;
+        const targetUrl = `https://github.io{dateStr}&userId=${USER_ID}`;
         window.location.href = targetUrl;
       });
 
