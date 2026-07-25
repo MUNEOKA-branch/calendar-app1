@@ -97,7 +97,34 @@
 
       const profile = await liff.getProfile();
       USER_ID = profile.userId;
-      
+
+      // 💡【ここに追加】回収した10名分のLINEユーザーIDリスト（ホワイトリスト）
+      const ALLOWED_USERS = [
+        "U41e4a2d3e5af8e94fa320cf924df0282", // 管理者（あなた）
+        "Ue18446f66e2349cdb23447fc2b68bf0a", // 閲覧者
+        "U5e259767ce7d5b016eef5942ee1ebb21", // 支部長
+        "U8e0e0d145369a8973e45569d47c4864e", // 支部女性部長
+        "U14688efa991671960eee8a36b20dd390", // パイオニア地区部長
+        "Udfe304c480730c3faff41cb16b273834", // パイオニア地区女性部長
+        "U0fdba27274bc8b092201e24d7a42ff7f", // 足立地区部長
+        "U451c3ab644d2932f7ec5e33ccb945ac2", // 足立地区女性部長
+        "Ud2777f25dba2899a62935b93f7122cb2", // 秋ヶ瀬地区部長
+        "Ua4009fcf33c8d7ed412a72e526e88e39", // 秋ヶ瀬地区女性部長
+        "U7c7c183d1c33a682dcb0fb36a97f565d", // 新田地区女性部長
+        // ...残りのメンバーのIDをここに「,」区切りで並べてください（計10名分）
+      ];
+
+      // 🔒【ここに追加】アクセス権限のチェック
+      if (!ALLOWED_USERS.includes(USER_ID)) {
+        // リストにない部外者の場合：画面を強制書き換えして処理を完全ストップ
+        document.body.innerHTML = `
+          <div style="text-align:center; padding-top:100px; font-family:sans-serif; padding-horizontal:20px;">
+              <h2 style="color:#d9534f;">アクセス権限がありません</h2>
+              <p style="color:#555;">この管理サイトは関係者限定です。<br>部外者は利用できません。</p>
+          </div>`;
+        return; // これ以降の処理（カレンダー描画など）に進ませない
+      }
+
       document.getElementById("welcomeMessage").textContent = `ようこそ、${profile.displayName} さん`;
       console.log("ユーザーID取得成功: " + USER_ID);
 
