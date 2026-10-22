@@ -116,7 +116,11 @@
           card.innerHTML = `
             ${cancelStampHtml}
             <div class="booking-date-badge">📅 ${dateStr}</div>
-            <div class="booking-title">${booking.name} 様${pickupHtml}</div>
+            <!-- 👇 ここに原因が表示されます -->
+            <div style="font-size: 11px; color: #EF4444; background: #000; padding: 4px; margin-bottom: 8px; font-family: monospace;">
+              🤖 システム確認：予約された日 ➔ ${rawCreatedAt}
+            </div>
+            <div class="booking-title">${booking.name} 様</div>
             <div class="booking-meta">
               ⏰ <strong>時間：</strong> ${booking.time}<br>
               📝 <strong>用途：</strong> ${booking.purpose}
@@ -124,7 +128,6 @@
           `;
           listContainer.appendChild(card);
         });
-
       } catch (e) {
         console.error("データ取得失敗:", e);
         listContainer.innerHTML = '<div class="no-booking">⚠️ データの読み込みに失敗しました。</div>';
