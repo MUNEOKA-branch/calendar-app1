@@ -105,14 +105,19 @@
 
           let pickupHtml = "";
           if (booking.createdAt && !booking.isCancelled) {
-            const createdDate = new Date(booking.createdAt);
+             // 💡 スラッシュ区切り「/」をiPhoneでも動くハイフン「-」に一瞬で変換します
+            const safeDateStr = String(booking.createdAt).replace(/\//g, "-");
+            const createdDate = new Date(safeDateStr);
             const today = new Date();
+            
+            // 時間のズレをなくすため、お互いの日付を「0時0分0秒」にリセット
             today.setHours(0,0,0,0);
             createdDate.setHours(0,0,0,0);
             
             // 「今日」と「予約された日」の日数差を計算
             const timeDiff = today.getTime() - createdDate.getTime();
             const dayDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            
             // 💡【デバッグ用】もし計算がズレている場合、開発ツール(F12)で原因を見れるようにログを残します
             console.log(`[予約者]: ${booking.name} / [予約日]: ${booking.createdAt} / [経過日数]: ${dayDiff}日`);
             
