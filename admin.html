@@ -102,31 +102,11 @@
           
           const bDate = new Date(booking.date);
           const dateStr = `${bDate.getFullYear()}年${bDate.getMonth() + 1}月${bDate.getDate()}日`;
-
-          let pickupHtml = "";
-          if (booking.createdAt && !booking.isCancelled) {
-             // 💡 スラッシュ区切り「/」をiPhoneでも動くハイフン「-」に一瞬で変換します
-            const safeDateStr = String(booking.createdAt).replace(/\//g, "-");
-            const createdDate = new Date(safeDateStr);
-            const today = new Date();
-            
-            // 時間のズレをなくすため、お互いの日付を「0時0分0秒」にリセット
-            today.setHours(0,0,0,0);
-            createdDate.setHours(0,0,0,0);
-            
-            // 「今日」と「予約された日」の日数差を計算
-            const timeDiff = today.getTime() - createdDate.getTime();
-            const dayDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-            
-            // 💡【デバッグ用】もし計算がズレている場合、開発ツール(F12)で原因を見れるようにログを残します
-            console.log(`[予約者]: ${booking.name} / [予約日]: ${booking.createdAt} / [経過日数]: ${dayDiff}日`);
-            
-            // 予約された日から3日以内（0〜3日）であればバッジを表示
-            if (dayDiff >= 0 && dayDiff <= 3) {
-              pickupHtml = `<span class="pickup-badge">🆕 新着（3日以内）</span>`;
-            }
-          }
-
+          
+           // 🔍 原因を画面にあぶり出すためのデバッグテキスト
+          // GASから届いた「予約された日（createdAt）」の生データをそのまま文字にします
+          const rawCreatedAt = booking.createdAt ? JSON.stringify(booking.createdAt) : "データが届いていません（空っぽ）";
+          
           let cancelStampHtml = "";
           if (booking.isCancelled) {
             card.classList.add("cancelled");
